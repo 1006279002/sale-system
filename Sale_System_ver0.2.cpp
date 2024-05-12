@@ -182,9 +182,6 @@ class Cart
                     cpdtdata.push_back(Product(name,price,storage,detail));
                 }
                 file.close();
-            }else{
-                cout<<"You haven't save a cart yet!"<<endl;
-                system("pause");
             }
         }//loadCartFromFile
 
@@ -208,15 +205,16 @@ class Cart
         Cart(string account) : money(0) 
         {
             this->_account=account;
-            this->filename=account+" Cart.csv";
+            this->filename=this->_account+"_Cart.csv";
             loadCartFromFile();
         }//Cart
 
         //add product into the cart
-        void addProudct(Product &pdt,int num)
+        void addProudct(string name,double price,string detail,int num)
         {
-            cpdtdata.push_back(Product(pdt.GetName(),pdt.GetPrice(),num,pdt.GetDetail()));
-            pdt.SetStorage(pdt.GetStorage()-num);
+            cpdtdata.push_back(Product(name,price,num,detail));
+            saveCartToFile();
+            cout<<"The product has added successfully"<<endl;
         }//addProudct
 
         //delete product from cart
@@ -296,8 +294,10 @@ class User
         //set the status of log
         void setIsLoggedIn(bool isLoggedin) { this->_isLoggedin = isLoggedin; }
 
-        void Add(Product &pdt,int num){this->buy_cart.addProudct(pdt,num);}
+        //add the product to but cart
+        void Add(string name,double price,string detail,int num){this->buy_cart.addProudct(name,price,detail,num);}
 
+        //delete the product from cart
         int Del(string name)
         {
             int num;
@@ -305,6 +305,7 @@ class User
             return num;
         }//Del
 
+        //modify the storage
         int Modify(string name,int num)
         {
             int diff;
@@ -312,6 +313,7 @@ class User
             return diff;
         }//Modify
 
+        //list all the products
         void List(){this->buy_cart.ListCart();}
 };//User
 
@@ -541,6 +543,7 @@ class SaleSystem
             }
         }//ListProducts
 
+        //for Admin
         //add new product to the database
         void AddProduct(string name,double price,int storage,string detail)
         {
@@ -609,6 +612,97 @@ class SaleSystem
                 }
             }
         }//ModifyDetail
+
+
+        //for User
+        void CartSystem(string name)
+        {
+            clean();
+            int jmpflag;
+            string pname;
+            int num;
+
+            for(auto user:userdata)
+            {
+                if(name.compare((user.GetAccount()))==0)
+                {
+                    while(true)
+                    {
+                        clean();
+                        bool judge=false;
+                        //cart interface
+                        cout<<"What do you want to do?"<<endl;
+                        cout<<"1. Add product to cart"<<endl;
+                        cout<<"2. List the products in cart"<<endl;
+                        cout<<"3. Delete the product in cart"<<endl;
+                        cout<<"4. Modify the number of product in cart"<<endl;
+                        cout<<"5. Cancel"<<endl;
+                        cout<<"Please input:";
+                        //switch the function
+                        cin>>jmpflag;
+
+                        clean();
+                        switch (jmpflag)
+                        {
+                        case 1:
+                            cout<<"Input the product name and the number you want to put in the cart"<<endl;
+                            cout<<"Product Name:";
+                            getline(cin,pname);
+                            cout<<"Number:";
+                            cin>>num;
+                            for(auto pdt:pdtdata)
+                            {
+                                if((pname.compare(pdt.GetName()))==0)
+                                {
+                                    user.Add(pdt.GetName(),pdt.GetPrice(),pdt.GetDetail(),num);
+                                    judge=true;
+                                }
+                            }
+                            if(!judge) cout<<"There isn't have such a product"<<endl;
+                            break;
+                        case 2:
+                            user.List();
+                            break;
+                        case 3:
+                            cout<<"Input the product name you want to delete"<<endl;
+                            cout<<"Product Name:";
+                            getline(cin,pname);
+                            for(auto pdt:pdtdata)
+                            {
+                                if((pname.compare(pdt.GetName()))==0)
+                                {
+                                    pdt.SetStorage(pdt.GetStorage()+user.Del(name));
+                                }
+                            }
+                            break;
+                        case 4:
+                            cout<<"Input the product name and the storage you want to modify"<<endl;
+                            cout<<"Product Name:";
+                            getline(cin,pname);
+                            cout<<"Number:";
+                            cin>>num;
+                            for(auto pdt:pdtdata)
+                            {
+                                if((pname.compare(pdt.GetName()))==0)
+                                {
+                                    pdt.SetStorage(pdt.GetStorage()+user.Modify(name,num));
+                                }
+                            }
+                            break;
+                        case 5:
+                            cout<<"returning..."<<endl;
+                            return;
+                        default:
+                            cout<<"Invalid input, please try again!"<<endl;
+                            break;
+                        }
+                        system("pause");
+                    }
+                }
+            }
+            cout<<"There isn't have such a User!"<<endl;
+            return;
+        }//CartSystem
 
         //search and list all the products may wanted
         void SearchSystem(string keywords)
@@ -827,7 +921,8 @@ SaleSystem UserInterface(SaleSystem mainsystem)
         cout<<"Hello, User <"<<mainsystem.GetUserName()<<">"<<endl<<endl;
         cout<<"1. Change the password"<<endl;
         cout<<"2. Search Product"<<endl;
-        cout<<"3. Log out"<<endl;
+        cout<<"3. Cart Management"<<endl;
+        cout<<"4. Log out"<<endl;
         cout<<"Please input:";
         //switch the function
         cin>>jmpflag;
@@ -845,7 +940,10 @@ SaleSystem UserInterface(SaleSystem mainsystem)
                 getline(cin,keywords);
                 mainsystem.SearchSystem(keywords);
                 break;
-             case 3:
+            case 3:
+                mainsystem.CartSystem(mainsystem.GetUserName());
+                break;
+            case 4:
                 mainsystem.UserLogout();
                 cout<<"return to the main system..."<<endl;
                 return mainsystem;
