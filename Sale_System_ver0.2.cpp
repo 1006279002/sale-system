@@ -240,7 +240,7 @@ class Cart
         int modifyStorage(string name,int num)
         {
             int diff;
-            for(auto pdt:cpdtdata)
+            for(auto &pdt:cpdtdata)
             {
                 if((name.compare(pdt.GetName()))==0)
                 {
@@ -622,7 +622,7 @@ class SaleSystem
             string pname;
             int num;
 
-            for(auto user:userdata)
+            for(auto &user:userdata)
             {
                 if(name.compare((user.GetAccount()))==0)
                 {
@@ -648,14 +648,17 @@ class SaleSystem
                             cout<<"Input the product name and the number you want to put in the cart"<<endl;
                             cout<<"Product Name:";
                             getline(cin,pname);
+                            fflush(stdin);
                             cout<<"Number:";
                             cin>>num;
-                            for(auto pdt:pdtdata)
+                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
-                                if((pname.compare(pdt.GetName()))==0)
+                                if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    user.Add(pdt.GetName(),pdt.GetPrice(),pdt.GetDetail(),num);
+                                    user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
                                     judge=true;
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num));
+                                    break;
                                 }
                             }
                             if(!judge) cout<<"There isn't have such a product"<<endl;
@@ -667,11 +670,13 @@ class SaleSystem
                             cout<<"Input the product name you want to delete"<<endl;
                             cout<<"Product Name:";
                             getline(cin,pname);
-                            for(auto pdt:pdtdata)
+                            fflush(stdin);
+                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
-                                if((pname.compare(pdt.GetName()))==0)
+                                if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    pdt.SetStorage(pdt.GetStorage()+user.Del(name));
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Del(pname)));
+                                    break;
                                 }
                             }
                             break;
@@ -679,13 +684,15 @@ class SaleSystem
                             cout<<"Input the product name and the storage you want to modify"<<endl;
                             cout<<"Product Name:";
                             getline(cin,pname);
+                            fflush(stdin);
                             cout<<"Number:";
                             cin>>num;
-                            for(auto pdt:pdtdata)
+                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
-                                if((pname.compare(pdt.GetName()))==0)
+                                if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    pdt.SetStorage(pdt.GetStorage()+user.Modify(name,num));
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)));
+                                    break;
                                 }
                             }
                             break;
@@ -728,7 +735,7 @@ class SaleSystem
                 switch (jmpflag)
                 {
                 case 1:
-                    for(auto pdt:pdtdata)
+                    for(auto &pdt:pdtdata)
                     {
                         if((keywords.compare(pdt.GetName()))==0)
                         {
@@ -740,7 +747,7 @@ class SaleSystem
                     cout<<"Using Accurate Search can't find the product!"<<endl;
                     return;
                 case 2:
-                    for(auto pdt:pdtdata)
+                    for(auto &pdt:pdtdata)
                     {
                         if(levenshtein_distance(trim(pdt.GetName()),trim(keywords))<min)
                         {
