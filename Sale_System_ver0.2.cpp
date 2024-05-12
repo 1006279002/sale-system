@@ -128,6 +128,7 @@ class Product
         void SetStorage(int storage) {this->_storage=storage;}
 };//Product
 
+//class of the Cart for every User
 class Cart
 {
     private:
@@ -174,6 +175,7 @@ class Cart
                             continue;
                         }else{
                             detail=word;
+                            count=0;
                             continue;
                         }
                     }
@@ -193,7 +195,7 @@ class Cart
             {
                 file << "Product Name" << "," << "Price" << "," << "Storage" << "," << "Detail" << endl;
 
-                for(auto &pdt:cpdtdata)
+                for(auto pdt:cpdtdata)
                 {
                     file << pdt.GetName() << "," << pdt.GetPrice() << "," << pdt.GetStorage() << "," << pdt.GetDetail() << endl;
                 }
@@ -206,13 +208,25 @@ class Cart
         {
             this->_account=account;
             this->filename=this->_account+"_Cart.csv";
-            loadCartFromFile();
         }//Cart
 
         //add product into the cart
         void addProudct(string name,double price,string detail,int num)
         {
-            cpdtdata.push_back(Product(name,price,num,detail));
+            bool judge=true;
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {
+                    pdt.SetStorage(pdt.GetStorage()+num);
+                    judge=false;
+                    break;
+                }
+            }
+            if(judge)
+            {
+                cpdtdata.push_back(Product(name,price,num,detail));
+            }
             saveCartToFile();
             cout<<"The product has added successfully"<<endl;
         }//addProudct
@@ -265,6 +279,11 @@ class Cart
                 cout << "|" << setw(20) << pdt.GetName() << "|" << setw(10) << pdt.GetPrice() << "|" << setw(10) << pdt.GetStorage() << "|" << setw(60) << pdt.GetDetail() << "|" << endl;
             } 
         }//ListCart
+
+         void RebootCart()
+        {
+            loadCartFromFile();
+        }//RebootCart
 };//Cart
 
 //class of the Customer
@@ -315,6 +334,8 @@ class User
 
         //list all the products
         void List(){this->buy_cart.ListCart();}
+
+        void Reboot(){this->buy_cart.RebootCart();}
 };//User
 
 //the main shopping system
@@ -404,6 +425,7 @@ class SaleSystem
                             continue;
                         }else{
                             detail=word;
+                            count=0;
                             continue;
                         }
                     }
@@ -423,7 +445,7 @@ class SaleSystem
             {
                 file << "Product Name" << "," << "Price" << "," << "Storage" << "," << "Detail" << endl;
 
-                for(auto &pdt:pdtdata)
+                for(auto pdt:pdtdata)
                 {
                     file << pdt.GetName() << "," << pdt.GetPrice() << "," << pdt.GetStorage() << "," << pdt.GetDetail() << endl;
                 }
@@ -584,7 +606,7 @@ class SaleSystem
         }//ModifyPrice
 
         //modify the storage of the product
-        void ModifyStorage(string name,int storage)
+        void ModifyStorage(string name,int storage,bool flag)
         {
             for(auto &pdt:pdtdata)
             {
@@ -592,7 +614,8 @@ class SaleSystem
                 {
                     pdt.SetStorage(storage);
                     saveProductToFile();
-                    cout<<"The storage has modified successfully!"<<endl;
+                    if(flag)
+                        cout<<"The storage has modified successfully!"<<endl;
                     return;
                 }
             }
@@ -622,10 +645,11 @@ class SaleSystem
             string pname;
             int num;
 
-            for(auto &user:userdata)
+            for(auto user:userdata)
             {
                 if(name.compare((user.GetAccount()))==0)
                 {
+                    user.Reboot();
                     while(true)
                     {
                         clean();
@@ -651,13 +675,13 @@ class SaleSystem
                             fflush(stdin);
                             cout<<"Number:";
                             cin>>num;
-                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
+                            for(auto pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
                                     user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
                                     judge=true;
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num));
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num),false);
                                     break;
                                 }
                             }
@@ -671,11 +695,11 @@ class SaleSystem
                             cout<<"Product Name:";
                             getline(cin,pname);
                             fflush(stdin);
-                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
+                            for(auto pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Del(pname)));
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Del(pname)),false);
                                     break;
                                 }
                             }
@@ -687,11 +711,11 @@ class SaleSystem
                             fflush(stdin);
                             cout<<"Number:";
                             cin>>num;
-                            for(vector<Product>::iterator pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
+                            for(auto pdt=pdtdata.begin();pdt!=pdtdata.end();pdt++)
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)));
+                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)),false);
                                     break;
                                 }
                             }
@@ -826,7 +850,7 @@ SaleSystem ModifyInterface(SaleSystem mainsystem,string name)
             case 2:
                 cout<<"Please input the storage you want to modify:";
                 cin>>storage;
-                mainsystem.ModifyStorage(name,storage);
+                mainsystem.ModifyStorage(name,storage,true);
                 break;
             case 3:
                 cout<<"Please input the detail you want to modify:"<<endl;
