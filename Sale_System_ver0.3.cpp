@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define VERSION 0.2
+#define VERSION 0.3
 
 //clean the shell and the io
 void clean()
@@ -269,6 +269,32 @@ class Cart
             return 0;
         }//modifyStorage
 
+        void modifyPrice(string name,double price)
+        {
+            loadCartFromFile();
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {
+                    pdt.SetPrice(price);
+                    saveCartToFile();
+                }
+            }
+        }//modifyPrice
+
+        void modifyDetail(string name,string detail)
+        {
+            loadCartFromFile();
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {      
+                    pdt.SetDetail(detail);
+                    saveCartToFile();
+                }
+            }
+        }//modifyDetail
+
         //list all the product in cart
         void ListCart()
         {
@@ -353,6 +379,10 @@ class User
         void Reboot(){this->buy_cart.RebootCart();}
 
         int GetDiff(string name,int num){return buy_cart.getDiff(name,num);}
+
+        void fixPrice(string name,double price){buy_cart.modifyPrice(name,price);}
+
+        void fixDetail(string name,string detail){buy_cart.modifyDetail(name,detail);}
 };//User
 
 //the main shopping system
@@ -610,12 +640,17 @@ class SaleSystem
         //modify the price of the product
         void ModifyPrice(string name,double price)
         {
+            string filename;
             for(auto &pdt:pdtdata)
             {
                 if((name.compare(pdt.GetName()))==0)
                 {
                     pdt.SetPrice(price);
                     saveProductToFile();
+                    for(auto user:userdata)
+                    {
+                        user.fixPrice(name,price);
+                    }
                     cout<<"The price has modified successfully!"<<endl;
                     return;
                 }
@@ -641,12 +676,17 @@ class SaleSystem
         //modify the detail of the product
         void ModifyDetail(string name,string detail)
         {
+            string filename;
             for(auto &pdt:pdtdata)
             {
                 if((name.compare(pdt.GetName()))==0)
                 {
                     pdt.SetDetail(detail);
                     saveProductToFile();
+                    for(auto user:userdata)
+                    {
+                        user.fixDetail(name,detail);
+                    }
                     cout<<"The detail has modified successfully!"<<endl;
                     return;
                 }
