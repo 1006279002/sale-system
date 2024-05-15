@@ -284,6 +284,21 @@ class Cart
         {
             loadCartFromFile();
         }//RebootCart
+
+        int getDiff(string name,int num)
+        {
+            int diff;
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {
+                    diff=pdt.GetStorage()-num;
+                    return diff;
+                }
+            }
+            cout<<"There isn't such a product"<<endl;
+            return 0;
+        }//getDiff
 };//Cart
 
 //class of the Customer
@@ -336,6 +351,8 @@ class User
         void List(){this->buy_cart.ListCart();}
 
         void Reboot(){this->buy_cart.RebootCart();}
+
+        int GetDiff(string name,int num){return buy_cart.getDiff(name,num);}
 };//User
 
 //the main shopping system
@@ -644,6 +661,7 @@ class SaleSystem
             int jmpflag;
             string pname;
             int num;
+            int temp;
 
             for(auto user:userdata)
             {
@@ -679,9 +697,14 @@ class SaleSystem
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
                                     judge=true;
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num),false);
+                                    if((pdt->GetStorage()-num)>=0)
+                                    {
+                                        user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
+                                        ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num),false);
+                                    }else{
+                                        cout<<"The storage of this product is not enough\n"<<endl;
+                                    }
                                     break;
                                 }
                             }
@@ -715,7 +738,16 @@ class SaleSystem
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)),false);
+                                    temp=user.GetDiff(pname,num);
+                                    if(temp!=0)
+                                    {
+                                        if((pdt->GetStorage()+temp)>=0)
+                                        {
+                                            ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)),false);
+                                        }else{
+                                            cout<<"The storage of this product is not enough\n"<<endl;
+                                        }
+                                    }
                                     break;
                                 }
                             }
