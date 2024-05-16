@@ -7,7 +7,11 @@
 
 using namespace std;
 
+<<<<<<< Updated upstream:Sale_System_ver0.3.cpp
 #define VERSION 0.2
+=======
+#define VERSION 0.5
+>>>>>>> Stashed changes:Sale_System_ver0.5.cpp
 
 //clean the shell and the io
 void clean()
@@ -133,6 +137,7 @@ class Cart
 {
     private:
         vector<Product> cpdtdata;
+        vector<Product> spdtdata;
         double money;
         string _account;
         string filename;
@@ -140,6 +145,7 @@ class Cart
         //load the cart data from the file
         void loadCartFromFile()
         {
+            cpdtdata.clear();
             ifstream file(filename,ios::in);
             if(file.is_open())
             {
@@ -284,6 +290,91 @@ class Cart
         {
             loadCartFromFile();
         }//RebootCart
+<<<<<<< Updated upstream:Sale_System_ver0.3.cpp
+=======
+
+        int getDiff(string name,int num)
+        {
+            int diff;
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {
+                    diff=pdt.GetStorage()-num;
+                    return diff;
+                }
+            }
+            cout<<"There isn't such a product"<<endl;
+            return 0;
+        }//getDiff
+
+        double calculatePrice(bool judge)
+        {
+            money=0;
+            if(judge)
+            {
+                for(auto pdt:cpdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }else{
+                for(auto pdt:spdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }
+            return money;
+        }//calculatePrice
+
+        void AddToPurchase(string name)
+        {
+
+        }
+
+        void PurchaseSystem()
+        {
+            int jmpflag;
+            clean();
+            string name;
+
+            while(true)
+            {
+                clean();
+                //small interface
+                cout<<"Here are the modes given:"<<endl;
+                cout<<"1. Choose product you want to purchase"<<endl;
+                cout<<"2. Purchase these products"<<endl;
+                cout<<"3. Cancel"<<endl;
+                cout<<"Please input:";
+                //switch the function
+                cin>>jmpflag;
+
+                clean();
+
+                switch (jmpflag)
+                {
+                    case 1:
+                        cout<<"Please input the name of the product you want to add in the purchase list"<<endl;
+                        cout<<"Product Name:";
+                        getline(cin,name);
+                        AddToPurchase(name);
+                        break;
+                    case 2:
+                        cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
+                        saveCartToFile();
+                        return;
+                    case 3:
+                        cout<<"returning..."<<endl;
+                        loadCartFromFile();
+                        return;
+                    default:
+                        cout<<"Invalid input, please try again!"<<endl;
+                        break;
+                }
+                system("pause");
+            }
+        }//PurchaseSystem
+>>>>>>> Stashed changes:Sale_System_ver0.5.cpp
 };//Cart
 
 //class of the Customer
