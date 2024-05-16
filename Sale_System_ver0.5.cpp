@@ -7,11 +7,7 @@
 
 using namespace std;
 
-<<<<<<< Updated upstream:Sale_System_ver0.3.cpp
-#define VERSION 0.2
-=======
 #define VERSION 0.5
->>>>>>> Stashed changes:Sale_System_ver0.5.cpp
 
 //clean the shell and the io
 void clean()
@@ -209,6 +205,41 @@ class Cart
             }
         }//saveCartToFile
 
+        //put the pdtdata into the purchase data
+        void AddToPurchase(string name)
+        {
+            for(auto it=cpdtdata.begin();it!=cpdtdata.end();it++)
+            {
+                if((name.compare(it->GetName()))==0)
+                {
+                    spdtdata.push_back(Product(it->GetName(),it->GetPrice(),it->GetStorage(),it->GetDetail()));
+                    cpdtdata.erase(it);
+                    cout<<"The product has added in successfully"<<endl;
+                    return;
+                }
+            }
+            cout<<"There isn't have such a product"<<endl;
+        }//AddToPurchase
+
+        //calculate all the price
+        double calculatePrice(bool judge)
+        {
+            money=0;
+            if(judge)
+            {
+                for(auto pdt:cpdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }else{
+                for(auto pdt:spdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }
+            return money;
+        }//calculatePrice
+
     public:
         Cart(string account) : money(0) 
         {
@@ -286,13 +317,13 @@ class Cart
             } 
         }//ListCart
 
+        //reload the file
          void RebootCart()
         {
             loadCartFromFile();
         }//RebootCart
-<<<<<<< Updated upstream:Sale_System_ver0.3.cpp
-=======
 
+        //get the difference of the storage
         int getDiff(string name,int num)
         {
             int diff;
@@ -308,29 +339,13 @@ class Cart
             return 0;
         }//getDiff
 
-        double calculatePrice(bool judge)
+        //show the price in the cart
+        void showPrice()
         {
-            money=0;
-            if(judge)
-            {
-                for(auto pdt:cpdtdata)
-                {
-                    money+=(pdt.GetPrice()*pdt.GetStorage());
-                }
-            }else{
-                for(auto pdt:spdtdata)
-                {
-                    money+=(pdt.GetPrice()*pdt.GetStorage());
-                }
-            }
-            return money;
-        }//calculatePrice
+            cout<<"The price of all the products in the cart is "<<calculatePrice(true)<<endl;
+        }//showPrice
 
-        void AddToPurchase(string name)
-        {
-
-        }
-
+        //purchase interface
         void PurchaseSystem()
         {
             int jmpflag;
@@ -350,7 +365,6 @@ class Cart
                 cin>>jmpflag;
 
                 clean();
-
                 switch (jmpflag)
                 {
                     case 1:
@@ -361,6 +375,7 @@ class Cart
                         break;
                     case 2:
                         cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
+                        spdtdata.clear();
                         saveCartToFile();
                         return;
                     case 3:
@@ -374,7 +389,6 @@ class Cart
                 system("pause");
             }
         }//PurchaseSystem
->>>>>>> Stashed changes:Sale_System_ver0.5.cpp
 };//Cart
 
 //class of the Customer
@@ -426,7 +440,14 @@ class User
         //list all the products
         void List(){this->buy_cart.ListCart();}
 
+        //reload the file
         void Reboot(){this->buy_cart.RebootCart();}
+
+        //show the price of the cart
+        void ShowPrice(){this->buy_cart.showPrice();}
+
+        //get in the purchase interface
+        void PurchaseInterface(){this->buy_cart.PurchaseSystem();}
 };//User
 
 //the main shopping system
@@ -751,7 +772,9 @@ class SaleSystem
                         cout<<"2. List the products in cart"<<endl;
                         cout<<"3. Delete the product in cart"<<endl;
                         cout<<"4. Modify the number of product in cart"<<endl;
-                        cout<<"5. Cancel"<<endl;
+                        cout<<"5. Show the total price"<<endl;
+                        cout<<"6. Purchase the products"<<endl;
+                        cout<<"7. Cancel"<<endl;
                         cout<<"Please input:";
                         //switch the function
                         cin>>jmpflag;
@@ -812,6 +835,12 @@ class SaleSystem
                             }
                             break;
                         case 5:
+                            user.ShowPrice();
+                            break;
+                        case 6:
+                            user.PurchaseInterface();
+                            break;
+                        case 7:
                             cout<<"returning..."<<endl;
                             return;
                         default:
