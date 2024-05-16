@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define VERSION 0.2
+#define VERSION 0.5
 
 //clean the shell and the io
 void clean()
@@ -133,6 +133,7 @@ class Cart
 {
     private:
         vector<Product> cpdtdata;
+        vector<Product> spdtdata;
         double money;
         string _account;
         string filename;
@@ -140,6 +141,7 @@ class Cart
         //load the cart data from the file
         void loadCartFromFile()
         {
+            cpdtdata.clear();
             ifstream file(filename,ios::in);
             if(file.is_open())
             {
@@ -202,6 +204,41 @@ class Cart
                 file.close();
             }
         }//saveCartToFile
+
+        //put the pdtdata into the purchase data
+        void AddToPurchase(string name)
+        {
+            for(auto it=cpdtdata.begin();it!=cpdtdata.end();it++)
+            {
+                if((name.compare(it->GetName()))==0)
+                {
+                    spdtdata.push_back(Product(it->GetName(),it->GetPrice(),it->GetStorage(),it->GetDetail()));
+                    cpdtdata.erase(it);
+                    cout<<"The product has added in successfully"<<endl;
+                    return;
+                }
+            }
+            cout<<"There isn't have such a product"<<endl;
+        }//AddToPurchase
+
+        //calculate all the price
+        double calculatePrice(bool judge)
+        {
+            money=0;
+            if(judge)
+            {
+                for(auto pdt:cpdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }else{
+                for(auto pdt:spdtdata)
+                {
+                    money+=(pdt.GetPrice()*pdt.GetStorage());
+                }
+            }
+            return money;
+        }//calculatePrice
 
     public:
         Cart(string account) : money(0) 
@@ -280,10 +317,78 @@ class Cart
             } 
         }//ListCart
 
+        //reload the file
          void RebootCart()
         {
             loadCartFromFile();
         }//RebootCart
+
+        //get the difference of the storage
+        int getDiff(string name,int num)
+        {
+            int diff;
+            for(auto &pdt:cpdtdata)
+            {
+                if((name.compare(pdt.GetName()))==0)
+                {
+                    diff=pdt.GetStorage()-num;
+                    return diff;
+                }
+            }
+            cout<<"There isn't such a product"<<endl;
+            return 0;
+        }//getDiff
+
+        //show the price in the cart
+        void showPrice()
+        {
+            cout<<"The price of all the products in the cart is "<<calculatePrice(true)<<endl;
+        }//showPrice
+
+        //purchase interface
+        void PurchaseSystem()
+        {
+            int jmpflag;
+            clean();
+            string name;
+
+            while(true)
+            {
+                clean();
+                //small interface
+                cout<<"Here are the modes given:"<<endl;
+                cout<<"1. Choose product you want to purchase"<<endl;
+                cout<<"2. Purchase these products"<<endl;
+                cout<<"3. Cancel"<<endl;
+                cout<<"Please input:";
+                //switch the function
+                cin>>jmpflag;
+
+                clean();
+                switch (jmpflag)
+                {
+                    case 1:
+                        cout<<"Please input the name of the product you want to add in the purchase list"<<endl;
+                        cout<<"Product Name:";
+                        getline(cin,name);
+                        AddToPurchase(name);
+                        break;
+                    case 2:
+                        cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
+                        spdtdata.clear();
+                        saveCartToFile();
+                        return;
+                    case 3:
+                        cout<<"returning..."<<endl;
+                        loadCartFromFile();
+                        return;
+                    default:
+                        cout<<"Invalid input, please try again!"<<endl;
+                        break;
+                }
+                system("pause");
+            }
+        }//PurchaseSystem
 };//Cart
 
 //class of the Customer
@@ -335,7 +440,14 @@ class User
         //list all the products
         void List(){this->buy_cart.ListCart();}
 
+        //reload the file
         void Reboot(){this->buy_cart.RebootCart();}
+
+        //show the price of the cart
+        void ShowPrice(){this->buy_cart.showPrice();}
+
+        //get in the purchase interface
+        void PurchaseInterface(){this->buy_cart.PurchaseSystem();}
 };//User
 
 //the main shopping system
@@ -660,7 +772,9 @@ class SaleSystem
                         cout<<"2. List the products in cart"<<endl;
                         cout<<"3. Delete the product in cart"<<endl;
                         cout<<"4. Modify the number of product in cart"<<endl;
-                        cout<<"5. Cancel"<<endl;
+                        cout<<"5. Show the total price"<<endl;
+                        cout<<"6. Purchase the products"<<endl;
+                        cout<<"7. Cancel"<<endl;
                         cout<<"Please input:";
                         //switch the function
                         cin>>jmpflag;
@@ -721,6 +835,12 @@ class SaleSystem
                             }
                             break;
                         case 5:
+                            user.ShowPrice();
+                            break;
+                        case 6:
+                            user.PurchaseInterface();
+                            break;
+                        case 7:
                             cout<<"returning..."<<endl;
                             return;
                         default:
