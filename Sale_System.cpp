@@ -8,7 +8,7 @@
 
 using namespace std;
 
-#define VERSION 0.5
+#define VERSION 1.1
 
 //clean the shell and the io
 void clean()
