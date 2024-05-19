@@ -4,10 +4,11 @@
 #include <vector>
 #include <fstream>
 #include <iomanip>
+#include <ctime>
 
 using namespace std;
 
-#define VERSION 0.5
+#define VERSION 1.1
 
 //clean the shell and the io
 void clean()
@@ -60,6 +61,23 @@ string trim(string s)
 	}
     return s;
 }//trim
+
+//generate the tick
+string rand_str(const int len)
+{
+    string str;                 
+    char c;                     
+    int idx;          
+    srand(time(0)); 
+    int tick;         
+    for(idx = 0;idx < len;idx ++)
+    {
+        tick=rand()%2;
+        tick==1 ? c = 'a' + rand() % 26 : c = 'A' + rand() % 26;
+        str.push_back(c);       
+    }
+    return str;                 
+}//rand_str
 
 //class of the Administrator
 class Admin
@@ -134,9 +152,24 @@ class Cart
     private:
         vector<Product> cpdtdata;
         vector<Product> spdtdata;
+
+        vector<Product> logdata;
+
         double money;
         string _account;
         string filename;
+        string logname;
+        bool discount;
+
+        time_t Time;
+        struct tm *p;
+
+        bool eventdiscount;
+        double eventrate;
+
+        bool used;
+        double rate;
+        string ticket;
 
         //load the cart data from the file
         void loadCartFromFile()
@@ -240,11 +273,114 @@ class Cart
             return money;
         }//calculatePrice
 
+        void loadEventStatus()
+        {
+            ifstream file("event");
+            if(file.is_open())
+            {
+                string Event,Rate;
+                getline(file,Event);
+                getline(file,Rate);
+                eventdiscount=(Event.compare("1")==0)?true:false;
+                eventrate=stod(Rate);
+                file.close();
+            }
+        }
+
+        void saveLog()
+        {
+            ofstream file(logname,ios::out);
+            if(file.is_open())
+            {
+                file << "Product Name" << "," << "Price" << "," << "Storage" << "," << "Time" << endl;
+
+                for(auto pdt:logdata)
+                {
+                    file << pdt.GetName() << "," << pdt.GetPrice() << "," << pdt.GetStorage() << "," << pdt.GetDetail() << endl;
+                }
+                file.close();
+            }
+        }//saveLog
+        
+        void loadLog()
+        {
+            logdata.clear();
+            ifstream file(logname,ios::in);
+            if(file.is_open())
+            {
+                string line,word;
+                int count=0;
+            
+                string name,detail,Price,Storage;
+                double price;
+                int storage;
+
+                getline(file,line);
+
+                istringstream sin;
+
+                while(getline(file,line))
+                {
+                    sin.clear();
+                    sin.str(line);
+                    while(getline(sin,word,','))
+                    {
+                        if(count==0)
+                        {
+                            name=word;
+                            count++;
+                            continue;
+                        }else if(count==1){
+                            Price=word;
+                            count++;
+                            continue;
+                        }else if(count==2){
+                            Storage=word;
+                            count++;
+                            continue;
+                        }else{
+                            detail=word;
+                            count=0;
+                            continue;
+                        }
+                    }
+                    price=stod(Price);
+                    storage=atoi(Storage.c_str());
+                    logdata.push_back(Product(name,price,storage,detail));
+                }
+                file.close();
+            }
+        }//loadLog
+
     public:
-        Cart(string account) : money(0) 
+        Cart(string account) : money(0) ,discount(false), used(false)
         {
             this->_account=account;
             this->filename=this->_account+"_Cart.csv";
+            this->logname=this->_account+"_log.csv";
+            
+            ticket=rand_str(20);
+            srand(time(0));
+            int judgement;
+            judgement=rand()%100;
+            
+            if(judgement<5)
+            {
+                rate=0.8;
+            }
+            else if(judgement<15)
+            {
+                rate=0.85;
+            }
+            else if(judgement<35)
+            {
+                rate=0.9;
+            }
+            else
+            {
+                rate=0.95;
+            }
+            loadEventStatus();
         }//Cart
 
         //add product into the cart
@@ -309,7 +445,7 @@ class Cart
         //list all the product in cart
         void ListCart()
         {
-           cout<<"Products in Cart:"<<endl;
+            cout<<"Products in Cart:"<<endl;
             cout << "|" << setw(20) << "<Product Name>" << "|" << setw(10) << "<Price>" << "|" << setw(10) << "<Storage>" << "|" << setw(60) << "<Detail>" << "|" << endl;
             for (const auto &pdt : cpdtdata)
             {
@@ -345,12 +481,84 @@ class Cart
             cout<<"The price of all the products in the cart is "<<calculatePrice(true)<<endl;
         }//showPrice
 
+        void changeRate(double _rate)
+        {
+            this->eventrate=_rate;
+            eventdiscount=(this->eventrate==1)?false:true;
+        }//changeRate
+
+        //History Interface
+        void HistorySystem()
+        {
+            loadLog();
+            int jmpflag;
+            clean();
+            string time1;
+            string time2;
+
+            while(true)
+            {
+                clean();
+                //small interface
+                cout<<"Here are the modes given:"<<endl;
+                cout<<"1. See all the history"<<endl;
+                cout<<"2. Set time to find history"<<endl;
+                cout<<"3. Cancel"<<endl;
+                cout<<"Please input:";
+                //switch the function
+                cin>>jmpflag;
+
+                clean();
+                switch (jmpflag)
+                {
+                case 1:
+                    cout<<"Purchase History"<<endl;
+                    cout << "|" << setw(20) << "<Product Name>" << "|" << setw(20) << "<Purchase Price>" << "|" << setw(20) << "<Purchase Time>" << "|" << endl;
+                    for(auto pdt:logdata)
+                    {
+                        cout << "|" << setw(20) << pdt.GetName() << "|" << setw(20) << (pdt.GetPrice()*pdt.GetStorage()) << "|" << setw(20) << pdt.GetDetail() << "|" << endl;
+                    }
+                    break;
+                case 2:
+                    cout<<"Please input two time to search the purchase history"<<endl;
+                    cout<<"Tips: The format is \'xxxx/xx/xx xx:xx:xx\', such as 2024/5/19 12:41:09"<<endl;
+                    cout<<"Lower time:";
+                    getline(cin,time1);
+                    fflush(stdin);
+                    cout<<"Higher time:";
+                    getline(cin,time2);
+
+                    clean();
+                    cout<<"Purchase History"<<endl;
+                    cout << "|" << setw(20) << "<Product Name>" << "|" << setw(20) << "<Purchase Price>" << "|" << setw(20) << "<Purchase Time>" << "|" << endl;
+                    for(auto pdt:logdata)
+                    {
+                        if(pdt.GetDetail()<time2 && pdt.GetDetail()>time1)
+                            cout << "|" << setw(20) << pdt.GetName() << "|" << setw(20) << (pdt.GetPrice()*pdt.GetStorage()) << "|" << setw(20) << pdt.GetDetail() << "|" << endl;
+                    }
+                    break;
+                case 3:
+                    cout<<"returning..."<<endl;
+                    logdata.clear();
+                    return;
+                default:
+                    cout<<"Invalid input, please try again!"<<endl;
+                    break;
+                }
+                system("pause");
+            }
+        }//HistorySystem
+
         //purchase interface
         void PurchaseSystem()
         {
+            loadEventStatus();
             int jmpflag;
             clean();
             string name;
+            string ticket_code;
+
+            string stime;
 
             while(true)
             {
@@ -358,8 +566,10 @@ class Cart
                 //small interface
                 cout<<"Here are the modes given:"<<endl;
                 cout<<"1. Choose product you want to purchase"<<endl;
-                cout<<"2. Purchase these products"<<endl;
-                cout<<"3. Cancel"<<endl;
+                cout<<"2. Show the discount ticket you have"<<endl;
+                cout<<"3. Input the ticket to have discount"<<endl;
+                cout<<"4. Purchase the current products"<<endl;
+                cout<<"5. Cancel"<<endl;
                 cout<<"Please input:";
                 //switch the function
                 cin>>jmpflag;
@@ -374,13 +584,78 @@ class Cart
                         AddToPurchase(name);
                         break;
                     case 2:
-                        cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
+                        if(used==false)
+                        {
+                            cout<<"Here is the discount ticket you have:"<<endl;
+                            cout<<ticket<<endl;
+                            cout<<"And the discount rate is "<<rate*100<<"%"<<endl;
+                        }else{
+                            cout<<"You have used the ticket, please try again next time"<<endl;
+                        }
+                        break;
+                    case 3:
+                        cout<<"Please input the ticket code:";
+                        getline(cin,ticket_code);
+                        if((ticket.compare(ticket_code))==0)
+                        {
+                            discount=true;
+                            cout<<"Congratulations, you have activate the discount!"<<endl;
+                        }else{
+                            cout<<"Invalid code, please try again!"<<endl;
+                        }
+                        break;
+                    case 4:
+                        loadLog();
+                        stime.clear();
+                        if(spdtdata.empty()){
+                            cout<<"Please add some products and try again!"<<endl;
+                            break;
+                        }
+
+                        if(discount || eventdiscount)
+                        {
+                            if(discount)
+                            {
+                                cout<<"The price you should pay:"<<(calculatePrice(false)*rate)<<endl;
+                                used=true;
+                            }else{
+                                cout<<"The price you should pay:"<<(calculatePrice(false)*eventrate)<<endl;
+                            }
+                        }else{
+                            cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
+                        }
+
+                        time(&Time);
+                        p=localtime(&Time);
+
+                        stime=stime+to_string(p->tm_year+1900)+"/"+to_string(p->tm_mon+1)+"/"+to_string(p->tm_mday)+" "+to_string(p->tm_hour)+":"+to_string(p->tm_min)+":"+to_string(p->tm_sec);
+
+                        for(auto &pdt:spdtdata)
+                        {
+                            pdt.SetDetail(stime);
+                            if(discount || eventdiscount)
+                            {
+                                if(discount)
+                                {
+                                    pdt.SetPrice(pdt.GetPrice()*rate);
+                                }else{
+                                    pdt.SetPrice(pdt.GetPrice()*eventrate);
+                                }
+                            }
+
+                            logdata.push_back(Product(pdt.GetName(),pdt.GetPrice(),pdt.GetStorage(),pdt.GetDetail()));
+                        }
+
+                        saveLog();
+
                         spdtdata.clear();
                         saveCartToFile();
+                        discount=false;
                         return;
-                    case 3:
+                    case 5:
                         cout<<"returning..."<<endl;
                         loadCartFromFile();
+                        discount=false;
                         return;
                     default:
                         cout<<"Invalid input, please try again!"<<endl;
@@ -448,6 +723,9 @@ class User
 
         //get in the purchase interface
         void PurchaseInterface(){this->buy_cart.PurchaseSystem();}
+
+        //get in the history interface
+        void PurchaseHistory(){this->buy_cart.HistorySystem();}
 };//User
 
 //the main shopping system
@@ -565,11 +843,43 @@ class SaleSystem
             }
         }//saveProductToFile
 
+        //save the event data
+        void saveEventStatus()
+        {
+            ofstream file("event");
+            if(file.is_open())
+            {
+                file << event << endl << _rate << endl << _eventdetail << endl;
+                file.close();
+            }
+        }
+
+        void loadEventStatus()
+        {
+            ifstream file("event");
+            if(file.is_open())
+            {
+                string Event,Rate;
+                getline(file,Event);
+                getline(file,Rate);
+                getline(file,_eventdetail);
+                event=(Event.compare("1")==0)?true:false;
+                _rate=stod(Rate);
+                file.close();
+            }
+        }
+
     public:
-        SaleSystem(string account,string password): admin(account,password),searchpdt("null",0,0,"null")
+        double _rate;
+        bool event;
+        string _eventdetail;
+
+        SaleSystem(string account,string password): admin(account,password),searchpdt("null",0,0,"null"),event(false),_rate(0)
         {
             loadCustomerFromFile();
             loadProductFromFile();
+            loadEventStatus();
+
             adminflag=false;
         }//SaleSystem
 
@@ -678,6 +988,28 @@ class SaleSystem
         }//ListProducts
 
         //for Admin
+        //set the event for all users
+        void setEvent()
+        {
+            cout<<"Please input the event discount rate:";
+            cin>>_rate;
+            fflush(stdin);
+            cout<<"Please input the event detail:"<<endl;
+            getline(cin,_eventdetail);
+            event=true;
+            saveEventStatus();
+            cout<<"The event has set successfully"<<endl;
+        }
+
+        //cancel the event
+        void removeEvent()
+        {
+            event=false;
+            _rate=1;
+            saveEventStatus();
+            cout<<"The event has end successfully"<<endl;
+        }
+
         //add new product to the database
         void AddProduct(string name,double price,int storage,string detail)
         {
@@ -774,7 +1106,8 @@ class SaleSystem
                         cout<<"4. Modify the number of product in cart"<<endl;
                         cout<<"5. Show the total price"<<endl;
                         cout<<"6. Purchase the products"<<endl;
-                        cout<<"7. Cancel"<<endl;
+                        cout<<"7. See the purchase history"<<endl;
+                        cout<<"8. Cancel"<<endl;
                         cout<<"Please input:";
                         //switch the function
                         cin>>jmpflag;
@@ -841,6 +1174,9 @@ class SaleSystem
                             user.PurchaseInterface();
                             break;
                         case 7:
+                            user.PurchaseHistory();
+                            break;
+                        case 8:
                             cout<<"returning..."<<endl;
                             return;
                         default:
@@ -1007,7 +1343,9 @@ SaleSystem AdminInterface(SaleSystem mainsystem)
         cout<<"1. Add Product"<<endl;
         cout<<"2. Remove Product"<<endl;
         cout<<"3. Modify Product"<<endl;
-        cout<<"4. Log out"<<endl;
+        cout<<"4. Set new event"<<endl;
+        cout<<"5. Cancel the event"<<endl;
+        cout<<"6. Log out"<<endl;
         cout<<"Please input:";
         //switch the function
         cin>>jmpflag;
@@ -1046,6 +1384,12 @@ SaleSystem AdminInterface(SaleSystem mainsystem)
                 mainsystem=ModifyInterface(mainsystem,name);
                 break;
             case 4:
+                mainsystem.setEvent();
+                break;
+            case 5:
+                mainsystem.removeEvent();
+                break;
+            case 6:
                 mainsystem.AdminLogout();
                 cout<<"return to the main system..."<<endl;
                 return mainsystem;
@@ -1124,7 +1468,16 @@ int main()
     {
         clean();
         //the main interface
-        cout<<"You could input the number of the label to use this system:"<<endl;
+        cout<<"Event:";
+        if(mainsystem.event)
+        {
+            cout<<"Available"<<endl;
+            cout<<"Detail:"<<mainsystem._eventdetail<<endl;
+        }else{
+            cout<<"Unavailable"<<endl;
+            cout<<endl;
+        }
+        cout<<endl<<"You could input the number of the label to use this system:"<<endl;
         cout<<"1. Admin log in"<<endl;
         cout<<"2. User log in"<<endl;
         cout<<"3. User register"<<endl;
