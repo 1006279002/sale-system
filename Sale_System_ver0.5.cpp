@@ -152,10 +152,17 @@ class Cart
     private:
         vector<Product> cpdtdata;
         vector<Product> spdtdata;
+
+        vector<Product> logdata;
+
         double money;
         string _account;
         string filename;
+        string logname;
         bool discount;
+
+        time_t Time;
+        struct tm *p;
 
         bool eventdiscount;
         double eventrate;
@@ -280,11 +287,77 @@ class Cart
             }
         }
 
+        void saveLog()
+        {
+            ofstream file(logname,ios::out);
+            if(file.is_open())
+            {
+                file << "Product Name" << "," << "Price" << "," << "Storage" << "," << "Time" << endl;
+
+                for(auto pdt:logdata)
+                {
+                    file << pdt.GetName() << "," << pdt.GetPrice() << "," << pdt.GetStorage() << "," << pdt.GetDetail() << endl;
+                }
+                file.close();
+            }
+        }//saveLog
+        
+        void loadLog()
+        {
+            logdata.clear();
+            ifstream file(logname,ios::in);
+            if(file.is_open())
+            {
+                string line,word;
+                int count=0;
+            
+                string name,detail,Price,Storage;
+                double price;
+                int storage;
+
+                getline(file,line);
+
+                istringstream sin;
+
+                while(getline(file,line))
+                {
+                    sin.clear();
+                    sin.str(line);
+                    while(getline(sin,word,','))
+                    {
+                        if(count==0)
+                        {
+                            name=word;
+                            count++;
+                            continue;
+                        }else if(count==1){
+                            Price=word;
+                            count++;
+                            continue;
+                        }else if(count==2){
+                            Storage=word;
+                            count++;
+                            continue;
+                        }else{
+                            detail=word;
+                            count=0;
+                            continue;
+                        }
+                    }
+                    price=stod(Price);
+                    storage=atoi(Storage.c_str());
+                    logdata.push_back(Product(name,price,storage,detail));
+                }
+                file.close();
+            }
+        }//loadLog
+
     public:
         Cart(string account) : money(0) ,discount(false), used(false)
         {
             this->_account=account;
             this->filename=this->_account+"_Cart.csv";
+            this->logname=this->_account+"_log.csv";
             
             ticket=rand_str(20);
             srand(time(0));
@@ -372,7 +445,7 @@ class Cart
         //list all the product in cart
         void ListCart()
         {
-           cout<<"Products in Cart:"<<endl;
+            cout<<"Products in Cart:"<<endl;
             cout << "|" << setw(20) << "<Product Name>" << "|" << setw(10) << "<Price>" << "|" << setw(10) << "<Storage>" << "|" << setw(60) << "<Detail>" << "|" << endl;
             for (const auto &pdt : cpdtdata)
             {
@@ -414,6 +487,68 @@ class Cart
             eventdiscount=(this->eventrate==1)?false:true;
         }//changeRate
 
+        //History Interface
+        void HistorySystem()
+        {
+            loadLog();
+            int jmpflag;
+            clean();
+            string time1;
+            string time2;
+
+            while(true)
+            {
+                clean();
+                //small interface
+                cout<<"Here are the modes given:"<<endl;
+                cout<<"1. See all the history"<<endl;
+                cout<<"2. Set time to find history"<<endl;
+                cout<<"3. Cancel"<<endl;
+                cout<<"Please input:";
+                //switch the function
+                cin>>jmpflag;
+
+                clean();
+                switch (jmpflag)
+                {
+                case 1:
+                    cout<<"Purchase History"<<endl;
+                    cout << "|" << setw(20) << "<Product Name>" << "|" << setw(20) << "<Purchase Price>" << "|" << setw(20) << "<Purchase Time>" << "|" << endl;
+                    for(auto pdt:logdata)
+                    {
+                        cout << "|" << setw(20) << pdt.GetName() << "|" << setw(20) << (pdt.GetPrice()*pdt.GetStorage()) << "|" << setw(20) << pdt.GetDetail() << "|" << endl;
+                    }
+                    break;
+                case 2:
+                    cout<<"Please input two time to search the purchase history"<<endl;
+                    cout<<"Tips: The format is \'xxxx/xx/xx xx:xx:xx\', such as 2024/5/19 12:41:09"<<endl;
+                    cout<<"Lower time:";
+                    getline(cin,time1);
+                    fflush(stdin);
+                    cout<<"Higher time:";
+                    getline(cin,time2);
+
+                    clean();
+                    cout<<"Purchase History"<<endl;
+                    cout << "|" << setw(20) << "<Product Name>" << "|" << setw(20) << "<Purchase Price>" << "|" << setw(20) << "<Purchase Time>" << "|" << endl;
+                    for(auto pdt:logdata)
+                    {
+                        if(pdt.GetDetail()<time2 && pdt.GetDetail()>time1)
+                            cout << "|" << setw(20) << pdt.GetName() << "|" << setw(20) << (pdt.GetPrice()*pdt.GetStorage()) << "|" << setw(20) << pdt.GetDetail() << "|" << endl;
+                    }
+                    break;
+                case 3:
+                    cout<<"returning..."<<endl;
+                    logdata.clear();
+                    return;
+                default:
+                    cout<<"Invalid input, please try again!"<<endl;
+                    break;
+                }
+                system("pause");
+            }
+        }//HistorySystem
+
         //purchase interface
         void PurchaseSystem()
         {
@@ -422,6 +557,8 @@ class Cart
             clean();
             string name;
             string ticket_code;
+
+            string stime;
 
             while(true)
             {
@@ -468,6 +605,8 @@ class Cart
                         }
                         break;
                     case 4:
+                        loadLog();
+                        stime.clear();
                         if(spdtdata.empty()){
                             cout<<"Please add some products and try again!"<<endl;
                             break;
@@ -485,6 +624,30 @@ class Cart
                         }else{
                             cout<<"The price you should pay:"<<calculatePrice(false)<<endl;
                         }
+
+                        time(&Time);
+                        p=localtime(&Time);
+
+                        stime=stime+to_string(p->tm_year+1900)+"/"+to_string(p->tm_mon+1)+"/"+to_string(p->tm_mday)+" "+to_string(p->tm_hour)+":"+to_string(p->tm_min)+":"+to_string(p->tm_sec);
+
+                        for(auto &pdt:spdtdata)
+                        {
+                            pdt.SetDetail(stime);
+                            if(discount || eventdiscount)
+                            {
+                                if(discount)
+                                {
+                                    pdt.SetPrice(pdt.GetPrice()*rate);
+                                }else{
+                                    pdt.SetPrice(pdt.GetPrice()*eventrate);
+                                }
+                            }
+
+                            logdata.push_back(Product(pdt.GetName(),pdt.GetPrice(),pdt.GetStorage(),pdt.GetDetail()));
+                        }
+
+                        saveLog();
+
                         spdtdata.clear();
                         saveCartToFile();
                         discount=false;
@@ -560,6 +723,9 @@ class User
 
         //get in the purchase interface
         void PurchaseInterface(){this->buy_cart.PurchaseSystem();}
+
+        //get in the history interface
+        void PurchaseHistory(){this->buy_cart.HistorySystem();}
 };//User
 
 //the main shopping system
@@ -940,7 +1106,8 @@ class SaleSystem
                         cout<<"4. Modify the number of product in cart"<<endl;
                         cout<<"5. Show the total price"<<endl;
                         cout<<"6. Purchase the products"<<endl;
-                        cout<<"7. Cancel"<<endl;
+                        cout<<"7. See the purchase history"<<endl;
+                        cout<<"8. Cancel"<<endl;
                         cout<<"Please input:";
                         //switch the function
                         cin>>jmpflag;
@@ -1007,6 +1174,9 @@ class SaleSystem
                             user.PurchaseInterface();
                             break;
                         case 7:
+                            user.PurchaseHistory();
+                            break;
+                        case 8:
                             cout<<"returning..."<<endl;
                             return;
                         default:
