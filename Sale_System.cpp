@@ -696,6 +696,8 @@ class User
         //add the product to but cart
         void Add(string name,double price,string detail,int num){this->buy_cart.addProudct(name,price,detail,num);}
 
+        int GetDiff(string name,int num){return this->buy_cart.getDiff(name,num);}
+
         //delete the product from cart
         int Del(string name)
         {
@@ -780,6 +782,7 @@ class SaleSystem
         //load the product data from the file
         void loadProductFromFile()
         {
+            pdtdata.clear();
             ifstream file("Product.csv",ios::in);
             if(file.is_open())
             {
@@ -1088,6 +1091,7 @@ class SaleSystem
             int jmpflag;
             string pname;
             int num;
+            int temp;
 
             for(auto user:userdata)
             {
@@ -1126,9 +1130,14 @@ class SaleSystem
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
                                     judge=true;
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num),false);
+                                    if((pdt->GetStorage()-num)>=0)
+                                    {
+                                        user.Add(pdt->GetName(),pdt->GetPrice(),pdt->GetDetail(),num);
+                                        ModifyStorage(pdt->GetName(),(pdt->GetStorage()-num),false);
+                                    }else{
+                                        cout<<"The storage of this product is not enough\n"<<endl;
+                                    }
                                     break;
                                 }
                             }
@@ -1162,7 +1171,16 @@ class SaleSystem
                             {
                                 if((pname.compare(pdt->GetName()))==0)
                                 {
-                                    ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)),false);
+                                    temp=user.GetDiff(pname,num);
+                                    if(temp!=0)
+                                    {
+                                        if((pdt->GetStorage()+temp)>=0)
+                                        {
+                                            ModifyStorage(pdt->GetName(),(pdt->GetStorage()+user.Modify(pname,num)),false);
+                                        }else{
+                                            cout<<"The storage of this product is not enough\n"<<endl;
+                                        }
+                                    }
                                     break;
                                 }
                             }
